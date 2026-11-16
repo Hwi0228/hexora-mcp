@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: hexora-mcp
+    runtime: python
+    plan: starter
+    buildCommand: pip install .
+    startCommand: uvicorn asgi:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
+    envVars:
+      - key: HEXORA_API_BASE_URL
+        sync: false
+      - key: HEXORA_API_TOKEN
+        sync: false
+      - key: MCP_ACCESS_TOKEN
+        sync: false
