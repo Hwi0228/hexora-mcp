@@ -1,5 +1,3 @@
-import os
-
 import httpx
 
 from hexora_mcp.auth_context import oauth_access_token

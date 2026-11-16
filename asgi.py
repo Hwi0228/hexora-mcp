@@ -1,7 +1,4 @@
 import json
-import os
-from urllib.parse import quote
-
 import httpx
 
 from hexora_mcp.auth_context import oauth_access_token
