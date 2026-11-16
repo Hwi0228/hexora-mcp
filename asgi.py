@@ -8,9 +8,10 @@ from server import mcp
 
 HEXORA_BASE = os.getenv("HEXORA_API_BASE_URL", "https://hexora.kro.kr").rstrip("/")
 HEXORA_TOKEN = os.getenv("HEXORA_API_TOKEN", "")
+MCP_PUBLIC_URL = os.getenv("MCP_PUBLIC_URL", "https://hexora-mcp.onrender.com").rstrip("/")
 RESOURCE_METADATA = os.getenv(
     "MCP_RESOURCE_METADATA_URL",
-    "https://mcp.hexora.kro.kr/.well-known/oauth-protected-resource/mcp",
+    MCP_PUBLIC_URL + "/.well-known/oauth-protected-resource/mcp",
 )
 inner = mcp.streamable_http_app()
 
@@ -32,7 +33,7 @@ class OAuthResourceMiddleware:
         if path != "/mcp":
             if path == "/.well-known/oauth-protected-resource/mcp":
                 body = json.dumps({
-                    "resource": "https://mcp.hexora.kro.kr/mcp",
+                    "resource": MCP_PUBLIC_URL + "/mcp",
                     "authorization_servers": ["https://hexora.kro.kr"],
                     "bearer_methods_supported": ["header"],
                     "scopes_supported": ["questions:read", "questions:write"],
