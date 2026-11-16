@@ -15,22 +15,38 @@ HEXORA의 공개 수학 문제은행을 ChatGPT 등 MCP 클라이언트에서 �
 
 `create_question`은 임시 저장이 아니라 공개 문제 DB에 즉시 등록합니다. 사용자가 명시적으로 등록을 요청한 경우에만 호출해야 합니다. 변형 기준 문항 번호를 제공하면 문제 계보 링크도 함께 생성합니다.
 
-## HEXORA API 연동
+## HEXORA API 연동 및 OAuth 2.1
 
-HEXORA 저장소의 `dev` 브랜치에 API 브리지가 등록되어 있어야 합니다. 해당 브리지는 기존 Flask 인증 훅과 분리된 Bearer 토큰 인증을 사용하며, 기존 `questions` 테이블과 문항 수정 이력 테이블을 그대로 사용합니다.
+HEXORA 로그인 계정을 사용하는 OAuth 2.1 Authorization Code + PKCE(S256) 인증을 지원합니다. MCP 클라이언트 사용자가 자신의 HEXORA 계정으로 로그인하고 권한을 승인하면, 각 요청은 해당 사용자 권한으로 실행됩니다.
 
-HEXORA 배포 환경 변수:
+HEXORA Render 환경 변수:
+- `HEXORA_MCP_API_TOKEN`: MCP 서버와 HEXORA API 사이의 비공개 서버 간 인증 토큰
+- `MCP_PUBLIC_URL`: 공개 MCP URL. 기본값은 `https://hexora-mcp.onrender.com`
 
-- `HEXORA_MCP_API_TOKEN`: MCP 서버가 호출할 내부 API 토큰
-- `HEXORA_MCP_SERVICE_USER_UUID`: MCP 등록 문항의 작성자 계정 UUID
+MCP Render 환경 변수:
+- `HEXORA_API_BASE_URL=https://hexora.kro.kr`
+- `HEXORA_API_TOKEN`: HEXORA의 `HEXORA_MCP_API_TOKEN`과 동일한 비밀값
+- `MCP_PUBLIC_URL=https://hexora-mcp.onrender.com` (커스텀 도메인 연결 후 해당 주소로 변경 가능)
 
-HEXORA Render Shell에서 서비스 작성자 계정을 한 번 생성합니다.
+OAuth 엔드포인트:
+- Authorization Server Metadata: `https://hexora.kro.kr/.well-known/oauth-authorization-server`
+- Authorization: `https://hexora.kro.kr/oauth/authorize`
+- Token: `https://hexora.kro.kr/oauth/token`
+- Dynamic Client Registration: `https://hexora.kro.kr/oauth/register`
+- Protected Resource Metadata: MCP 서버의 `/.well-known/oauth-protected-resource/mcp`
+- MCP endpoint: `/mcp`
 
-```bash
-flask --app app create-mcp-service-user
-```
+지원 범위:
+- Authorization Code + PKCE(S256)
+- Dynamic Client Registration
+- Access token(1시간) 및 refresh token(30일) 회전
+- Token revocation 및 내부 token introspection
+- `questions:read`, `questions:write` 권한 분리
+- 문항 등록 시 OAuth로 인증한 HEXORA 계정을 작성자로 사용
 
-출력된 UUID를 `HEXORA_MCP_SERVICE_USER_UUID`에 등록합니다. 이 계정은 일반 로그인용이 아니며, 임의 비밀번호 해시를 사용합니다.
+ChatGPT 연결 시 서버 URL은 `https://hexora-mcp.onrender.com/mcp`입니다. 인증 방식은 OAuth를 선택합니다. 사용자는 HEXORA 로그인 및 권한 승인 화면에서 연결하면 되며, 개인별 PowerShell 환경 변수나 공용 Bearer 토큰을 입력할 필요가 없습니다.
+
+`create_question`은 공개 문제 DB에 즉시 등록합니다. 사용자가 명시적으로 등록을 요청한 경우에만 호출해야 합니다.
 
 ## 로컬 실행
 
@@ -41,34 +57,15 @@ pip install -e ".[dev]"
 ```
 
 환경 변수:
-
 ```env
 HEXORA_API_BASE_URL=https://hexora.kro.kr
 HEXORA_API_TOKEN=<HEXORA_MCP_API_TOKEN과 동일한 값>
-MCP_ACCESS_TOKEN=<ChatGPT 연결용 별도 Bearer 토큰>
+MCP_PUBLIC_URL=http://localhost:8000
 ```
 
 ```bash
 uvicorn asgi:app --host 0.0.0.0 --port 8000
 ```
-
-MCP endpoint는 `/mcp`, 헬스 체크는 `/healthz`입니다. `/mcp`는 `MCP_ACCESS_TOKEN` Bearer 인증을 요구합니다.
-
-## Render 배포
-
-`render.yaml`은 무료 웹 서비스 구성으로 되어 있습니다. 무료 인스턴스는 유휴 시 정지될 수 있어 첫 요청의 응답이 느릴 수 있습니다.
-
-환경 변수는 Render 대시보드에서 비밀값으로 설정합니다. `HEXORA_API_TOKEN`은 HEXORA의 `HEXORA_MCP_API_TOKEN`과 같아야 하며, `MCP_ACCESS_TOKEN`은 ChatGPT 연결에 사용하는 별도 토큰입니다.
-
-## ChatGPT 연결
-
-서버를 HTTPS로 배포한 뒤 ChatGPT의 사용자 설정에서 커스텀 MCP 서버 연결 기능을 사용할 수 있는 계정이라면 다음 값을 입력합니다.
-
-- Server URL: `https://<Render 서비스 도메인>/mcp`
-- Authentication: Bearer token
-- Token: `MCP_ACCESS_TOKEN`
-
-연결 후 도구 목록을 스캔하고, 읽기 도구를 먼저 확인합니다. `create_question`은 공개 DB에 실제 문항을 등록하므로 필요한 경우에만 활성화하고 명시적 요청이 있을 때만 사용합니다.
 
 ## 성취기준 데이터 범위
 
