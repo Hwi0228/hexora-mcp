@@ -3,14 +3,17 @@
 Review database columns and helper signatures against the deployed HEXORA revision
 before registering this blueprint.
 """
-import hmac, json, os
-from flask import Blueprint, abort, g, jsonify, request
-from werkzeug.datastructures import MultiDict
+import hmac
+import json
+import os
+
 from database import begin_write_transaction, get_db
+from flask import Blueprint, abort, g, jsonify, request
 from question_ids import format_question_number, parse_question_number
 from question_repository import _question_row
 from question_revisions import _insert_question_revision, _question_snapshot
 from question_validation import _collect_question_data
+from werkzeug.datastructures import MultiDict
 
 mcp_api = Blueprint("mcp_api", __name__, url_prefix="/api/integrations/mcp")
 

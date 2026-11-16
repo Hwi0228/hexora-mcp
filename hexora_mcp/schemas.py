@@ -1,5 +1,7 @@
 from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
 
 class QuestionInput(BaseModel):
     model_config = ConfigDict(extra="forbid")

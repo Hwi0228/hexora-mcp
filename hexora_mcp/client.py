@@ -1,5 +1,6 @@
 import httpx
 
+
 class HexoraClient:
     def __init__(self, base_url: str, token: str, timeout: float = 20):
         self.base_url = base_url.rstrip("/") + "/api/integrations/mcp"

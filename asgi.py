@@ -1,4 +1,7 @@
-import hmac, json, os
+import hmac
+import json
+import os
+
 from server import mcp
 
 token = os.getenv("MCP_ACCESS_TOKEN", "")

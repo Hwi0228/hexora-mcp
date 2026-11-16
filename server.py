@@ -1,6 +1,9 @@
 import os
+
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
+from pydantic import ValidationError
+
 from hexora_mcp.client import HexoraClient
 from hexora_mcp.schemas import QuestionInput
 
@@ -50,7 +53,7 @@ async def validate_question(question: dict) -> dict:
     """Validate question fields without saving."""
     try:
         data = QuestionInput.model_validate(question).model_dump()
-    except Exception as exc:
+    except ValidationError as exc:
         return {"ok": False, "valid": False, "errors": [str(exc)]}
     return await api.request("POST", "/questions/validate", json=data)
 
@@ -59,7 +62,7 @@ async def create_question(question: dict) -> dict:
     """Create a validated question in HEXORA's public question bank."""
     try:
         data = QuestionInput.model_validate(question).model_dump()
-    except Exception as exc:
+    except ValidationError as exc:
         return {"ok": False, "created": False, "errors": [str(exc)]}
     checked = await api.request("POST", "/questions/validate", json=data)
     if not checked.get("valid", False):
