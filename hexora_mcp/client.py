@@ -1,6 +1,6 @@
 import httpx
 
-from hexora_mcp.auth_context import oauth_access_token
+from hexora_mcp.auth_context import auth0_identity
 
 
 class HexoraClient:
@@ -12,13 +12,17 @@ class HexoraClient:
     async def request(self, method: str, path: str, **kwargs):
         if not self.token:
             return {"ok": False, "error": "HEXORA_API_TOKEN is not configured"}
+        identity = auth0_identity.get()
+        if identity is None:
+            return {"ok": False, "error": "An authenticated Auth0 identity is required"}
         headers = {
             "Authorization": f"Bearer {self.token}",
             "Accept": "application/json",
+            "X-HEXORA-Auth0-Sub": identity["sub"],
+            "X-HEXORA-Auth0-Email": identity["email"],
+            "X-HEXORA-Auth0-Email-Verified": "true",
+            "X-HEXORA-Scopes": " ".join(identity["scopes"]),
         }
-        user_token = oauth_access_token.get()
-        if user_token:
-            headers["X-HEXORA-User-Token"] = user_token
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as http:
                 response = await http.request(
